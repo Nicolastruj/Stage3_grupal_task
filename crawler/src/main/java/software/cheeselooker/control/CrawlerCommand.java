@@ -31,11 +31,11 @@ public class CrawlerCommand implements Command {
         int successfulDownloads = 0;
         downloadLastBooks(successfulDownloads, lastId);
 
-        System.out.println("Three books downloaded successfully.");
+        System.out.println("Five books downloaded successfully.");
     }
 
     private void downloadLastBooks(int successfulDownloads, int lastId) {
-        while (successfulDownloads < 3) {
+        while (successfulDownloads < 5) {
             int nextId = lastId + 1;
             lastId += 1;
 
