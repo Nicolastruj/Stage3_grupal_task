@@ -10,14 +10,17 @@ import software.cheeselooker.ports.StoreInDatalakeInterface;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CrawlerTest {
-    //TODO check if ids are correct.
 
     @Test
     void downloadOneBook() throws IOException {
@@ -39,6 +42,8 @@ public class CrawlerTest {
 
         List<String> metadata = Files.readAllLines(metadataPath);
         assertEquals(stats.existingMetadataCount + 1, metadata.size(), "Metadata should contain one new entry.");
+        assertNoDuplicates(metadata, 0);
+        assertNoDuplicates(metadata, 1);
     }
 
     @Test
@@ -61,13 +66,15 @@ public class CrawlerTest {
 
         List<String> metadata = Files.readAllLines(metadataPath);
         assertEquals(stats.existingMetadataCount + 3, metadata.size(), "Metadata should contain three new entries.");
+        assertNoDuplicates(metadata, 0);
+        assertNoDuplicates(metadata, 1);
     }
 
     private EnvironmentStats prepareTestEnvironment(Path datalakePath, Path metadataPath) throws IOException {
         int existingMetadataCount = 0;
         if (Files.exists(metadataPath)) {
             List<String> existingMetadata = Files.readAllLines(metadataPath);
-            existingMetadataCount = existingMetadata.size(); // Exclude header
+            existingMetadataCount = existingMetadata.size();
         } else {
             Files.createDirectories(metadataPath.getParent());
         }
@@ -82,6 +89,16 @@ public class CrawlerTest {
         }
 
         return new EnvironmentStats(existingMetadataCount, existingBookCount);
+    }
+
+    private void assertNoDuplicates(List<String> metadata, int columnIndex) {
+        Set<String> indexes = new HashSet<>();
+        for (String line : metadata) {
+            String[] columns = line.split(",");
+            assertTrue(columns.length > columnIndex, "Metadata row has insufficient columns.");
+            String value = columns[columnIndex];
+            assertTrue(indexes.add(value), "Duplicate value found in column " + columnIndex + ": " + value);
+        }
     }
 
     private static class EnvironmentStats {
