@@ -1,0 +1,11 @@
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\apps\MainWithAggregatedStore.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\apps\MainWithExpandedStore.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\control\Command.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\control\IndexerCommand.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\exceptions\IndexerException.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\implementations\AggregatedHierarchicalCsvStore.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\implementations\ExpandedHierarchicalCsvStore.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\implementations\GutenbergBookReader.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\model\Book.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\ports\IndexerReader.java
+C:\Nueva carpeta (3)\bd\third_grupal_task\Stage3_grupal_task\indexer\src\main\java\software\cheeselooker\ports\IndexerStore.java

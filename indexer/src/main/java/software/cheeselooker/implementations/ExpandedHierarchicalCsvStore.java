@@ -24,6 +24,14 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
 
     @Override
     public void index(Book book) throws IndexerException {
+        Path backUp = invertedIndexPath;
+        int bookIdNumeric = Integer.parseInt(book.bookId());
+        int startRange = (bookIdNumeric / 10) * 10;
+        int endRange = startRange + 9;
+        String rangeDirectory = startRange + "-" + endRange;
+        Path divisionPath = invertedIndexPath.resolve(rangeDirectory);
+
+        invertedIndexPath = divisionPath;
         String content = book.content();
         String bookId = book.bookId();
         String[] words = content.split("\\W+");
@@ -34,6 +42,7 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
                 indexWord(bookId, i, word);
             }
         }
+        invertedIndexPath = backUp;
     }
 
     private static void loadStopWords(Path stopWordsFilePath) {
@@ -87,5 +96,8 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
     private static void writeWordInfoToFile(String bookId, int position, Path filePath) throws IOException {
         String csvEntry = bookId + "," + position + "\n";
         Files.write(filePath, csvEntry.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+    }
+    public static Path getInvertedIndexPath() {
+        return invertedIndexPath;
     }
 }
