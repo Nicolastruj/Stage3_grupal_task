@@ -1,0 +1,8 @@
+dontinline,*.*_all_jmhStub
+dontinline,*.*_avgt_jmhStub
+dontinline,*.*_sample_jmhStub
+dontinline,*.*_ss_jmhStub
+dontinline,*.*_thrpt_jmhStub
+inline,software/cheeselooker/IndexerTest$IndexerPath.setup
+inline,software/cheeselooker/IndexerTest.aggregatedIndexer
+inline,software/cheeselooker/IndexerTest.expandedIndexer

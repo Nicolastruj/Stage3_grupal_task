@@ -8,7 +8,11 @@
     <artifactId>Stage3_grupal_task</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-
+    <modules>
+        <module>crawler</module>
+        <module>indexer</module>
+        <module>query_engine</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

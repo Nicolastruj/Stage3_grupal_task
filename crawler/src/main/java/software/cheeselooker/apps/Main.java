@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class Main {
     public static void main(String[] args) {
         Path datalakePath = Paths.get(System.getProperty("user.dir"), "/data/datalake").normalize();
-        Path metadataPath = Paths.get(System.getProperty("user.dir"), "/data/metadata/metadata.csv").normalize();
+        Path metadataPath = Paths.get(System.getProperty("user.dir"), "metadata.csv").normalize();
 
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
@@ -30,8 +30,8 @@ public class Main {
     private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand) {
         scheduler.scheduleAtFixedRate(() -> {
             System.out.println("Starting download process...");
-            crawlerCommand.download(3);
-        }, 0, 20, TimeUnit.SECONDS);
+            crawlerCommand.download();
+        }, 0, 10, TimeUnit.SECONDS);
     }
 
 }
