@@ -27,11 +27,13 @@ public class IndexerBenchmark {
         public Path bookDatalakePath;
         public Path invertedIndexPath;
         public Path stopWordsPath;
+        public String indexedBooksFilePath;
 
         @Setup(Level.Trial)
         public void setup() throws IndexerException {
             bookDatalakePath = Paths.get(System.getProperty("user.dir"), "..", "BookDatalake").normalize();
             invertedIndexPath = Paths.get(System.getProperty("user.dir"), "..", "InvertedIndex").normalize();
+            indexedBooksFilePath = Paths.get(System.getProperty("user.dir"), "data/indexed_books.txt").toString();
             try {
                 stopWordsPath = Paths.get(MainWithAggregatedStore.class.getClassLoader()
                         .getResource("stopwords.txt").toURI());
@@ -46,7 +48,7 @@ public class IndexerBenchmark {
     public void aggregatedIndexer(IndexerPath path) throws IndexerException {
         IndexerReader indexerReader = new GutenbergBookReader(path.bookDatalakePath.toString());
         IndexerStore hierarchicalCsvStore = new AggregatedHierarchicalCsvStore(path.invertedIndexPath, path.stopWordsPath);
-        IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore);
+        IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore, path.indexedBooksFilePath);
         hierarchicalCsvController.execute();
     }
 
@@ -54,7 +56,7 @@ public class IndexerBenchmark {
     public void expandedIndexer(IndexerPath path) throws IndexerException {
         IndexerReader indexerReader = new GutenbergBookReader(path.bookDatalakePath.toString());
         IndexerStore hierarchicalCsvStore = new ExpandedHierarchicalCsvStore(path.invertedIndexPath, path.stopWordsPath);
-        IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore);
+        IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore, path.indexedBooksFilePath);
         hierarchicalCsvController.execute();
     }
 }

@@ -18,11 +18,12 @@ public class MainWithExpandedStore {
         Path bookDatalakePath = Paths.get(System.getProperty("user.dir"), "/data/datalake");
         Path invertedIndexPath = Paths.get(System.getProperty("user.dir"), "/data/datamart");
         Path stopWordsPath = Paths.get("indexer/src/main/resources/stopwords.txt");
+        String indexedBooksFilePath = Paths.get(System.getProperty("user.dir"), "data/indexed_books.txt").toString();
 
         IndexerReader indexerReader = new GutenbergBookReader(bookDatalakePath.toString());
 
         IndexerStore hierarchicalCsvStore = new ExpandedHierarchicalCsvStore(invertedIndexPath, stopWordsPath);
-        IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore);
+        IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore, indexedBooksFilePath);
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         scheduler.scheduleAtFixedRate(() -> {
@@ -31,6 +32,6 @@ public class MainWithExpandedStore {
             } catch (IndexerException e) {
                 throw new RuntimeException("Error while indexing books.", e);
             }
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 0, 20, TimeUnit.MINUTES);
     }
 }

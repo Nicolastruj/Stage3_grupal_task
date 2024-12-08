@@ -25,16 +25,24 @@ public class AggregatedHierarchicalCsvStore implements IndexerStore {
 
     @Override
     public void index(Book book) throws IndexerException {
-        String content = book.content();
+        Path backUp = invertedIndexPath;
+        int bookIdNumeric = Integer.parseInt(book.bookId());
+        int startRange = (bookIdNumeric / 10) * 10;
+        int endRange = startRange + 9;
+        String rangeDirectory = startRange + "-" + endRange;
 
+        invertedIndexPath = invertedIndexPath.resolve(rangeDirectory);
+        String content = book.content();
+        String bookId = book.bookId();
         String[] words = content.split("\\W+");
 
         for (int i = 0; i < words.length; i++) {
             String word = words[i].toLowerCase();
             if (!word.isEmpty() && !stopWords.contains(word)) {
-                indexWord(book.bookId(), i, word);
+                indexWord(bookId, i, word);
             }
         }
+        invertedIndexPath = backUp;
     }
 
     private static void loadStopWords(Path stopWordsFilePath) {
