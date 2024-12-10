@@ -81,7 +81,7 @@ public class CrawlerTest {
 
         int existingBookCount = 0;
         if (Files.exists(datalakePath)) {
-            for (File file : Objects.requireNonNull(datalakePath.toFile().listFiles())) {
+            for (File ignored : Objects.requireNonNull(datalakePath.toFile().listFiles())) {
                 existingBookCount++;
             }
         } else {
