@@ -30,8 +30,8 @@ public class Main {
     private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand) {
         scheduler.scheduleAtFixedRate(() -> {
             System.out.println("Starting download process...");
-            crawlerCommand.download();
-        }, 0, 20, TimeUnit.SECONDS);
+            crawlerCommand.download(3);
+        }, 0, 20, TimeUnit.MINUTES);
     }
 
 }

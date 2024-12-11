@@ -1,4 +1,4 @@
-package ulpgc;
+package software.cheeselooker;
 
 import org.openjdk.jmh.annotations.*;
 import software.cheeselooker.control.Command;
@@ -25,6 +25,6 @@ public class CrawlerBenchmark {
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
         Command crawlerCommand = new CrawlerCommand(bookDatalakePath.toString(), metadataPath.toString(), reader, store);
-        crawlerCommand.download();
+        crawlerCommand.download(3);
     }
 }

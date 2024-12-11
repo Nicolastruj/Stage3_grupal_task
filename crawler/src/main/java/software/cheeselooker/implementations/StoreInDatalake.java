@@ -48,7 +48,11 @@ public class StoreInDatalake implements StoreInDatalakeInterface {
     @Override
     public void saveMetadata(int customId, int gutenbergId, String title, String author, String url) throws CrawlerException {
         String metadataEntry = customId + "," + gutenbergId + "," + title + "," + author + "," + url + "\n";
-
+        try {
+            Files.createDirectories(metadataPath.getParent());
+        } catch (IOException e) {
+            throw new CrawlerException("Failed to create metadata directory: " + e.getMessage(), e);
+        }
         try (FileWriter writer = new FileWriter(metadataPath.toFile(), true)) {
             writer.write(metadataEntry);
         } catch (IOException e) {
