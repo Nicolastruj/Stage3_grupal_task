@@ -50,25 +50,42 @@ public class CommonQueryEngine implements QueryEngine {
     }
 
     private Map<String, List<Integer>> loadIndexedWordInfo(String word) throws QueryEngineException {
-        String wordFilePath = constructWordFilePath(word, indexFolder);
-        File file = new File(wordFilePath);
-
-        if (!file.exists()) {
-            return null;
+        File indexDir = new File(indexFolder);
+        if (!indexDir.exists() || !indexDir.isDirectory()) {
+            throw new QueryEngineException("Index folder not found: " + indexFolder);
         }
 
-        return getWordIndex(wordFilePath);
+        Pattern partitionPattern = Pattern.compile("^(\\d+)-(\\d+)$");
+
+        Map<String, List<Integer>> fullWordIndex = new HashMap<>();
+
+        for (File partition : Objects.requireNonNull(indexDir.listFiles(File::isDirectory))) {
+            Matcher matcher = partitionPattern.matcher(partition.getName());
+            if (!matcher.matches()) {
+                continue;
+            }
+
+            String wordFilePath = constructWordFilePathWithinPartition(word, partition);
+            File wordFile = new File(wordFilePath);
+
+            if (wordFile.exists()) {
+                fullWordIndex.putAll(getWordIndex(wordFilePath));
+            }
+        }
+
+        return fullWordIndex.isEmpty() ? null : fullWordIndex;
     }
 
-    private String constructWordFilePath(String word, String indexFolder) {
+    private String constructWordFilePathWithinPartition(String word, File partitionFolder) {
         int depth = Math.min(word.length(), 3);
-        StringBuilder pathBuilder = new StringBuilder(indexFolder);
+        StringBuilder pathBuilder = new StringBuilder(partitionFolder.getAbsolutePath());
         for (int i = 0; i < depth; i++) {
             pathBuilder.append("/").append(word.charAt(i));
         }
         pathBuilder.append("/").append(word).append(".csv");
         return pathBuilder.toString();
     }
+
 
     private static Map<String, List<Integer>> getWordIndex(String wordFilePath) throws QueryEngineException {
         Map<String, List<Integer>> wordIndex = new HashMap<>();
