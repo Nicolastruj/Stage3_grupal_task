@@ -6,8 +6,12 @@ import software.cheeselooker.model.QueryEngine;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.*;
 
 public class CommonQueryEngine implements QueryEngine {
     private final String metadataPath;
@@ -49,26 +53,67 @@ public class CommonQueryEngine implements QueryEngine {
         return loadIndexedWordInfo(word);
     }
 
-    private Map<String, List<Integer>> loadIndexedWordInfo(String word) throws QueryEngineException {
-        String wordFilePath = constructWordFilePath(word, indexFolder);
-        File file = new File(wordFilePath);
 
-        if (!file.exists()) {
-            return null;
+    private Map<String, List<Integer>> loadIndexedWordInfo(String word) throws QueryEngineException {
+        File indexDir = new File(indexFolder);
+        if (!indexDir.exists() || !indexDir.isDirectory()) {
+            throw new QueryEngineException("Index folder not found: " + indexFolder);
         }
 
-        return getWordIndex(wordFilePath);
+        Pattern partitionPattern = Pattern.compile("^(\\d+)-(\\d+)$");
+        Map<String, List<Integer>> fullWordIndex = new ConcurrentHashMap<>();
+
+        File[] partitions = Objects.requireNonNull(indexDir.listFiles(File::isDirectory));
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (File partition : partitions) {
+            Matcher matcher = partitionPattern.matcher(partition.getName());
+            if (!matcher.matches()) {
+                continue;
+            }
+
+            futures.add(executor.submit(() -> {
+                try {
+                    String wordFilePath = constructWordFilePathWithinPartition(word, partition);
+                    File wordFile = new File(wordFilePath);
+
+                    if (wordFile.exists()) {
+                        fullWordIndex.putAll(getWordIndex(wordFilePath));
+                    }
+                } catch (Exception e) {
+                    // Manejo de excepciones en cada tarea
+                    e.printStackTrace();
+                }
+            }));
+        }
+
+        // Esperar a que todas las tareas terminen
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new QueryEngineException("Error during parallel index loading", e);
+            }
+        }
+
+        executor.shutdown();
+
+        return fullWordIndex.isEmpty() ? null : fullWordIndex;
     }
 
-    private String constructWordFilePath(String word, String indexFolder) {
+
+    private String constructWordFilePathWithinPartition(String word, File partitionFolder) {
         int depth = Math.min(word.length(), 3);
-        StringBuilder pathBuilder = new StringBuilder(indexFolder);
+        StringBuilder pathBuilder = new StringBuilder(partitionFolder.getAbsolutePath());
         for (int i = 0; i < depth; i++) {
             pathBuilder.append("/").append(word.charAt(i));
         }
         pathBuilder.append("/").append(word).append(".csv");
         return pathBuilder.toString();
     }
+
 
     private static Map<String, List<Integer>> getWordIndex(String wordFilePath) throws QueryEngineException {
         Map<String, List<Integer>> wordIndex = new HashMap<>();
