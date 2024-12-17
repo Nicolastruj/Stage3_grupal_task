@@ -1,2 +1,0 @@
-JMH S 33 software.cheeselooker.IndexerTest S 73 software.cheeselooker.jmh_generated.IndexerTest_aggregatedIndexer_jmhTest S 17 aggregatedIndexer S 11 AverageTime E A 1 1 1 E I 1 1 T 3 1 s E I 1 5 T 3 1 s E I 1 1 E E E E E E U 12 MILLISECONDS E E 
-JMH S 33 software.cheeselooker.IndexerTest S 71 software.cheeselooker.jmh_generated.IndexerTest_expandedIndexer_jmhTest S 15 expandedIndexer S 11 AverageTime E A 1 1 1 E I 1 1 T 3 1 s E I 1 5 T 3 1 s E I 1 1 E E E E E E U 12 MILLISECONDS E E 

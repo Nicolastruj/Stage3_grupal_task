@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: software.cheeselooker.jmh_generated.IndexerTest_aggregatedIndexer_jmhTest
--------------------------------------------------------------------------------
-Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in software.cheeselooker.jmh_generated.IndexerTest_aggregatedIndexer_jmhTest

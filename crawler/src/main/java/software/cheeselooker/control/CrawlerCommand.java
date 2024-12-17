@@ -26,16 +26,16 @@ public class CrawlerCommand implements Command {
     }
 
     @Override
-    public void download() {
+    public void download(int numberOfBooks) {
         int lastId = obtainLastId(metadataPath);
         int successfulDownloads = 0;
-        downloadLastBooks(successfulDownloads, lastId);
+        downloadLastBooks(successfulDownloads, lastId, numberOfBooks);
 
         System.out.println("Three books downloaded successfully.");
     }
 
-    private void downloadLastBooks(int successfulDownloads, int lastId) {
-        while (successfulDownloads < 3) {
+    private void downloadLastBooks(int successfulDownloads, int lastId, int numberOfBooks) {
+        while (successfulDownloads < numberOfBooks) {
             int nextId = lastId + 1;
             lastId += 1;
 
@@ -116,6 +116,3 @@ public class CrawlerCommand implements Command {
 
 
 }
-
-
-
