@@ -68,6 +68,22 @@ public class CommonQueryEngine implements QueryEngine {
 
         List<Future<?>> futures = new ArrayList<>();
 
+        partitionedTask(word, partitions, partitionPattern, futures, executor, fullWordIndex);
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new QueryEngineException("Error during parallel index loading", e);
+            }
+        }
+
+        executor.shutdown();
+
+        return fullWordIndex.isEmpty() ? null : fullWordIndex;
+    }
+
+    private void partitionedTask(String word, File[] partitions, Pattern partitionPattern, List<Future<?>> futures, ExecutorService executor, Map<String, List<Integer>> fullWordIndex) {
         for (File partition : partitions) {
             Matcher matcher = partitionPattern.matcher(partition.getName());
             if (!matcher.matches()) {
@@ -83,24 +99,10 @@ public class CommonQueryEngine implements QueryEngine {
                         fullWordIndex.putAll(getWordIndex(wordFilePath));
                     }
                 } catch (Exception e) {
-                    // Manejo de excepciones en cada tarea
                     e.printStackTrace();
                 }
             }));
         }
-
-        // Esperar a que todas las tareas terminen
-        for (Future<?> future : futures) {
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new QueryEngineException("Error during parallel index loading", e);
-            }
-        }
-
-        executor.shutdown();
-
-        return fullWordIndex.isEmpty() ? null : fullWordIndex;
     }
 
 
