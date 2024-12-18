@@ -47,13 +47,20 @@ public class Main {
 
             // Crear el archivo de confirmación con "ok"
             try {
+                // Verificar si el directorio padre existe; si no, crearlo
+                Path confirmationDir = confirmationFile.toPath().getParent();
+                if (!Files.exists(confirmationDir)) {
+                    Files.createDirectories(confirmationDir);
+                }
+
+                // Escribir en el archivo confirmation
                 Files.write(confirmationFile.toPath(), "ok".getBytes());
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             System.out.println("Starting download process...");
-            crawlerCommand.download(3);
+            crawlerCommand.download(50);
 
             // Borrar el archivo de confirmación después de ejecutar la tarea
             if (confirmationFile.exists()) {

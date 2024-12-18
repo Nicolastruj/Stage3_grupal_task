@@ -32,6 +32,6 @@ public class MainWithExpandedStore {
             } catch (IndexerException e) {
                 throw new RuntimeException("Error while indexing books.", e);
             }
-        }, 0, 20, TimeUnit.MINUTES);
+        }, 0, 30, TimeUnit.MINUTES);
     }
 }
