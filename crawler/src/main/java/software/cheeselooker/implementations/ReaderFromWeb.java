@@ -76,6 +76,3 @@ public class ReaderFromWeb implements ReaderFromWebInterface {
                 .replace(",", ";");
     }
 }
-
-
-

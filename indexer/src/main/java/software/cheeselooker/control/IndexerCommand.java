@@ -5,23 +5,27 @@ import software.cheeselooker.model.Book;
 import software.cheeselooker.ports.IndexerReader;
 import software.cheeselooker.ports.IndexerStore;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
-public class IndexerCommand implements Command{
+public class IndexerCommand implements Command {
+    private final String indexedBooksFile;
     private final IndexerReader indexerReader;
     private final IndexerStore indexerStore;
 
-    public IndexerCommand(IndexerReader indexerReader, IndexerStore indexerStore) {
+    public IndexerCommand(IndexerReader indexerReader, IndexerStore indexerStore, String indexedBooksFile) {
         this.indexerReader = indexerReader;
         this.indexerStore = indexerStore;
+        this.indexedBooksFile = indexedBooksFile;
     }
 
     @Override
@@ -33,14 +37,38 @@ public class IndexerCommand implements Command{
     private void indexLatestBooks() throws IndexerException {
         Path bookPath = Paths.get(indexerReader.getPath());
         Path tempTrayPath = Paths.get(System.getProperty("user.dir"), "tempTrayPath");
-        moveLatestBooksToTempTray(tempTrayPath, bookPath);
-        indexBooksFrom(tempTrayPath);
+        Optional<String> lastIndexedId = getLastIndexedBookId();
+
+        moveNewBooksToTempTray(tempTrayPath, bookPath, lastIndexedId);
+        List<Book> booksToIndex = indexBooksFrom(tempTrayPath);
+
+        if (!booksToIndex.isEmpty()) {
+            String maxBookId = booksToIndex.stream()
+                    .map(Book::bookId)
+                    .max(String::compareTo)
+                    .orElse("");
+            saveLastIndexedBookId(maxBookId);
+        }
+
         deleteTempTray(tempTrayPath);
     }
 
-    private void moveLatestBooksToTempTray(Path tempTray, Path bookPath) throws IndexerException {
+    private Optional<String> getLastIndexedBookId() {
+        Path filePath = Paths.get(indexedBooksFile);
+        if (!Files.exists(filePath)) {
+            return Optional.empty();
+        }
+        try {
+            return Files.lines(filePath).findFirst();
+        } catch (IOException e) {
+            System.err.println("Error reading indexed books file: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private void moveNewBooksToTempTray(Path tempTray, Path bookPath, Optional<String> lastIndexedId) throws IndexerException {
         createIfNotExists(tempTray);
-        copyLatestBooksToTempTray(bookPath, tempTray);
+        copyNewBooksToTempTray(bookPath, tempTray, lastIndexedId);
     }
 
     private static void createIfNotExists(Path tempTray) throws IndexerException {
@@ -53,36 +81,67 @@ public class IndexerCommand implements Command{
         }
     }
 
-    private void copyLatestBooksToTempTray(Path bookPath, Path tempTray) throws IndexerException {
+    private void copyNewBooksToTempTray(Path bookPath, Path tempTray, Optional<String> lastIndexedId) throws IndexerException {
         try (Stream<Path> paths = Files.walk(bookPath)) {
-            paths.filter(Files::isRegularFile)
-                    .sorted((p1, p2) -> {
+            List<Path> newBooks = paths.filter(Files::isRegularFile)
+                    .filter(path -> {
+                        if (lastIndexedId.isEmpty()) return true;
+
+                        String bookId = extractBookId(path);
+
                         try {
-                            return Files.getLastModifiedTime(p2).compareTo(Files.getLastModifiedTime(p1));
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
+                            int bookIdInt = Integer.parseInt(bookId);
+                            int lastIndexedIdInt = Integer.parseInt(lastIndexedId.get());
+                            return bookIdInt > lastIndexedIdInt;
+                        } catch (NumberFormatException e) {
+                            return bookId.compareTo(lastIndexedId.get()) > 0;
                         }
                     })
-                    .limit(5)
-                    .forEach(sourcePath -> {
-                        Path destinationPath = tempTray.resolve(sourcePath.getFileName());
-                        try {
-                            Files.copy(sourcePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                    .sorted(Comparator.comparing(this::extractBookId))
+                    .toList();
 
-                    });
+
+            for (Path sourcePath : newBooks) {
+                Path destinationPath = tempTray.resolve(sourcePath.getFileName());
+                System.out.println("copying " + destinationPath);
+                try {
+                    Files.copy(sourcePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         } catch (IOException e) {
             throw new IndexerException(e.getMessage(), e);
         }
     }
 
-    private void indexBooksFrom(Path tempTrayPath) throws IndexerException {
+    private String extractBookId(Path path) {
+        String fileName = path.getFileName().toString();
+        String[] parts = fileName.split("_");
+        if (parts.length == 2) {
+            return parts[1].replace(".txt", "");
+        }
+        return fileName;
+    }
+
+    private List<Book> indexBooksFrom(Path tempTrayPath) throws IndexerException {
         List<Book> books = indexerReader.read(String.valueOf(tempTrayPath));
+        List<Book> indexedBooks = new ArrayList<>();
 
         for (Book book : books) {
+            System.out.println("book in tray" + book.bookId());
             indexerStore.index(book);
+            indexedBooks.add(book);
+        }
+
+        return indexedBooks;
+    }
+
+    private void saveLastIndexedBookId(String bookId) throws IndexerException {
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(indexedBooksFile))) {
+            writer.write(bookId);
+        } catch (IOException e) {
+            throw new IndexerException("Failed to save last indexed book ID", e);
         }
     }
 

@@ -4,9 +4,6 @@ import software.cheeselooker.exceptions.CrawlerException;
 import software.cheeselooker.ports.ReaderFromWebInterface;
 import software.cheeselooker.ports.StoreInDatalakeInterface;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -29,16 +26,16 @@ public class CrawlerCommand implements Command {
     }
 
     @Override
-    public void download() {
+    public void download(int numberOfBooks) {
         int lastId = obtainLastId(metadataPath);
         int successfulDownloads = 0;
-        downloadLastBooks(successfulDownloads, lastId);
+        downloadLastBooks(successfulDownloads, lastId, numberOfBooks);
 
-        System.out.println("Five books downloaded successfully.");
+        System.out.println("Three books downloaded successfully.");
     }
 
-    private void downloadLastBooks(int successfulDownloads, int lastId) {
-        while (successfulDownloads < 5) {
+    private void downloadLastBooks(int successfulDownloads, int lastId, int numberOfBooks) {
+        while (successfulDownloads < numberOfBooks) {
             int nextId = lastId + 1;
             lastId += 1;
 
@@ -117,15 +114,5 @@ public class CrawlerCommand implements Command {
         return lastLine;
     }
 
-    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand) {
-        scheduler.scheduleAtFixedRate(() -> {
-            System.out.println("Starting download process...");
-            crawlerCommand.download();
-        }, 0, 20, TimeUnit.SECONDS);
-    }
-
 
 }
-
-
-
