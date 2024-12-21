@@ -1,5 +1,6 @@
 package software.cheeselooker.control;
 
+import com.hazelcast.map.IMap;
 import software.cheeselooker.exceptions.CrawlerException;
 import software.cheeselooker.ports.ReaderFromWebInterface;
 import software.cheeselooker.ports.StoreInDatalakeInterface;
@@ -17,12 +18,16 @@ public class CrawlerCommand implements Command {
     private final String metadataPath;
     private final ReaderFromWebInterface reader;
     private final StoreInDatalakeInterface store;
+    private final IMap<Integer, String> bookMap;  // Aquí agregamos el campo bookMap
 
-    public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader, StoreInDatalakeInterface store) {
+    // Modificar el constructor para incluir el parámetro IMap
+    public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader,
+                          StoreInDatalakeInterface store, IMap<Integer, String> bookMap) {
         this.datalakePath = datalakePath;
         this.metadataPath = metadataPath;
         this.reader = reader;
         this.store = store;
+        this.bookMap = bookMap;  // Inicializamos bookMap
     }
 
     @Override
@@ -73,6 +78,9 @@ public class CrawlerCommand implements Command {
         int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
         store.saveMetadata(customId, nextId, titleAndAuthor[0], titleAndAuthor[1],
                 "https://www.gutenberg.org/files/" + nextId + "/" + nextId + "-0.txt");
+
+        // Aquí puedes realizar la lógica de agregar el libro al IMap si es necesario
+        bookMap.put(nextId, titleAndAuthor[0]);  // Este es solo un ejemplo, ajusta según tu lógica
     }
 
     public static int obtainLastId(String metadataPath) {
@@ -113,6 +121,4 @@ public class CrawlerCommand implements Command {
         }
         return lastLine;
     }
-
-
 }
