@@ -22,7 +22,7 @@ public class CrawlerCommand implements Command {
 
     // Modificar el constructor para incluir el parámetro IMap
     public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader,
-                          StoreInDatalakeInterface store, IMap<Integer, String> bookMap) {
+                          StoreInDatalakeInterface store, IMap<String, String> bookMap) {
         this.datalakePath = datalakePath;
         this.metadataPath = metadataPath;
         this.reader = reader;

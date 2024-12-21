@@ -14,9 +14,6 @@ import software.cheeselooker.implementations.StoreInDatalake;
 import software.cheeselooker.ports.ReaderFromWebInterface;
 import software.cheeselooker.ports.StoreInDatalakeInterface;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Executors;
@@ -33,56 +30,39 @@ public class Main {
         JoinConfig joinConfig = networkConfig.getJoin();
 
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.1.2").addMember("192.168.1.3");  // Agrega las IPs de los portátiles
+        tcpIpConfig.setEnabled(true).addMember("192.168.1.19").addMember("192.168.1.76"); // Agrega las IPs de los portátiles
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
-        IMap<Integer, String> bookMap = hazelcastInstance.getMap("bookMap");  // Obtener el IMap
+        IMap<String, String> confirmationMap = hazelcastInstance.getMap("confirmationMap"); // Mapa distribuido para la confirmación
 
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
-        Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, bookMap);  // Pasar el IMap al constructor
+        Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, confirmationMap);
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        periodicTask(scheduler, crawlerCommand);
+        periodicTask(scheduler, crawlerCommand, confirmationMap);
     }
 
-    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand) {
+    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, IMap<String, String> confirmationMap) {
         scheduler.scheduleAtFixedRate(() -> {
-            File confirmationFile = new File(System.getProperty("user.dir") + "/data/confirmation");
+            // Clave en el mapa para la confirmación
+            String confirmationKey = "taskConfirmation";
 
-            if (confirmationFile.exists()) {
-                try {
-                    String content = new String(Files.readAllBytes(confirmationFile.toPath())).trim();
-                    if (content.equals("ok")) {
-                        System.out.println("Task already executed. Skipping this time.");
-                        return;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            // Verificar si ya se ejecutó la tarea
+            String status = confirmationMap.get(confirmationKey);
+            if ("ok".equals(status)) {
+                System.out.println("Task already executed by another node. Skipping this time.");
+                return;
             }
 
-            // Crear el archivo de confirmación con "ok"
-            try {
-                // Verificar si el directorio padre existe; si no, crearlo
-                Path confirmationDir = confirmationFile.toPath().getParent();
-                if (!Files.exists(confirmationDir)) {
-                    Files.createDirectories(confirmationDir);
-                }
-
-                // Escribir en el archivo confirmation
-                Files.write(confirmationFile.toPath(), "ok".getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // Marcar la tarea como en ejecución
+            confirmationMap.put(confirmationKey, "ok");
 
             System.out.println("Starting download process...");
             crawlerCommand.download(50);
 
-            // Borrar el archivo de confirmación después de ejecutar la tarea
-            if (confirmationFile.exists()) {
-                confirmationFile.delete();
-            }
+            // Marcar la tarea como completada después de la ejecución
+            confirmationMap.put(confirmationKey, "completed");
 
         }, 0, 20, TimeUnit.MINUTES);
     }
