@@ -1,5 +1,9 @@
 package software.cheeselooker.apps;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
@@ -24,7 +28,14 @@ public class Main {
         Path datalakePath = Paths.get(System.getProperty("user.dir"), "/data/datalake").normalize();
         Path metadataPath = Paths.get(System.getProperty("user.dir"), "/data/metadata/metadata.csv").normalize();
 
-        HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
+        Config config = new Config();
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        JoinConfig joinConfig = networkConfig.getJoin();
+
+        TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
+        tcpIpConfig.setEnabled(true).addMember("192.168.1.2").addMember("192.168.1.3");  // Agrega las IPs de los portátiles
+
+        HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         IMap<Integer, String> bookMap = hazelcastInstance.getMap("bookMap");  // Obtener el IMap
 
         ReaderFromWebInterface reader = new ReaderFromWeb();
