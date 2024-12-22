@@ -1,8 +1,8 @@
 package software.cheeselooker.apps;
 
+import spark.Spark;
 import software.cheeselooker.implementations.CommonQueryEngine;
 import software.cheeselooker.implementations.SearchServerOutput;
-import spark.Spark;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,25 +30,21 @@ public class SearchServer {
 
             if (query == null || query.trim().isEmpty()) {
                 res.status(400);
-                return "Parameter 'words' required.";
+                return "<html><body><h2>Parameter 'words' required.</h2></body></html>";
             }
 
-            System.out.println("Received query: " + query);
-
             String[] words = query.toLowerCase().split("\\s+");
-            System.out.println("Processed words: " + Arrays.toString(words));
 
             try {
                 List<Map<String, Object>> wordResults = queryEngine.query(words);
 
-                String plainTextResults = SearchServerOutput.getPlainTextResults(wordResults, query);
+                String htmlResults = SearchServerOutput.getPlainTextResults(wordResults, query);
 
                 res.type("text/html");
-                return plainTextResults;
+                return htmlResults;
             } catch (Exception e) {
-                e.printStackTrace();
                 res.status(500);
-                return "Error processing the query: " + e.getMessage();
+                return "<html><body><h2>Error processing the query: " + e.getMessage() + "</h2></body></html>";
             }
         });
     }
