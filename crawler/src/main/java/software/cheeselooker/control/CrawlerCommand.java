@@ -18,7 +18,7 @@ public class CrawlerCommand implements Command {
     private final String metadataPath;
     private final ReaderFromWebInterface reader;
     private final StoreInDatalakeInterface store;
-    private final IMap<Integer, String> bookMap;  // Aquí agregamos el campo bookMap
+    private final IMap<String, String> bookMap;  // Aquí agregamos el campo bookMap
 
     // Modificar el constructor para incluir el parámetro IMap
     public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader,
@@ -27,7 +27,7 @@ public class CrawlerCommand implements Command {
         this.metadataPath = metadataPath;
         this.reader = reader;
         this.store = store;
-        this.bookMap = bookMap;  // Inicializamos bookMap
+        this.bookMap = bookMap;
     }
 
     @Override
@@ -44,6 +44,12 @@ public class CrawlerCommand implements Command {
             int nextId = lastId + 1;
             lastId += 1;
 
+            // Verificar si el libro ya ha sido descargado
+            if (bookMap.containsKey(String.valueOf(nextId))) {
+                System.out.println("Book ID " + nextId + " has already been downloaded. Skipping.");
+                continue; // Si el libro ya ha sido descargado, pasar al siguiente
+            }
+
             try {
                 String[] titleAndAuthor = reader.getTitleAndAuthor(nextId);
 
@@ -55,9 +61,10 @@ public class CrawlerCommand implements Command {
                             System.out.println("Successfully downloaded book ID " + nextId);
                         } else {
                             System.out.println("Book not found: " + nextId);
+                            // Si el libro no se encuentra, pasar al siguiente sin aumentar el contador de descargas
                         }
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        System.err.println("Error downloading book ID " + nextId + ": " + e.getMessage());
                     }
                 } else {
                     System.out.println("Failed to retrieve title and author for book ID " + nextId);
@@ -67,12 +74,13 @@ public class CrawlerCommand implements Command {
             }
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1000); // Pausar entre descargas
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
     }
+
 
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
         int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
@@ -80,7 +88,7 @@ public class CrawlerCommand implements Command {
                 "https://www.gutenberg.org/files/" + nextId + "/" + nextId + "-0.txt");
 
         // Aquí puedes realizar la lógica de agregar el libro al IMap si es necesario
-        bookMap.put(nextId, titleAndAuthor[0]);  // Este es solo un ejemplo, ajusta según tu lógica
+        bookMap.put(String.valueOf(nextId), titleAndAuthor[0]);  // Este es solo un ejemplo, ajusta según tu lógica
     }
 
     public static int obtainLastId(String metadataPath) {

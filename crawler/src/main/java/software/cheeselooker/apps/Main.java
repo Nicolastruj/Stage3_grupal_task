@@ -33,36 +33,20 @@ public class Main {
         tcpIpConfig.setEnabled(true).addMember("192.168.1.19").addMember("192.168.1.76"); // Agrega las IPs de los portátiles
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
-        IMap<String, String> confirmationMap = hazelcastInstance.getMap("confirmationMap"); // Mapa distribuido para la confirmación
+        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap"); // Mapa distribuido para la confirmación
 
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
-        Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, confirmationMap);
+        Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, bookMap);
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        periodicTask(scheduler, crawlerCommand, confirmationMap);
+        periodicTask(scheduler, crawlerCommand);
     }
 
-    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, IMap<String, String> confirmationMap) {
+    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand) {
         scheduler.scheduleAtFixedRate(() -> {
-            // Clave en el mapa para la confirmación
-            String confirmationKey = "taskConfirmation";
 
-            // Verificar si ya se ejecutó la tarea
-            String status = confirmationMap.get(confirmationKey);
-            if ("ok".equals(status)) {
-                System.out.println("Task already executed by another node. Skipping this time.");
-                return;
-            }
-
-            // Marcar la tarea como en ejecución
-            confirmationMap.put(confirmationKey, "ok");
-
-            System.out.println("Starting download process...");
             crawlerCommand.download(50);
-
-            // Marcar la tarea como completada después de la ejecución
-            confirmationMap.put(confirmationKey, "completed");
 
         }, 0, 20, TimeUnit.MINUTES);
     }
