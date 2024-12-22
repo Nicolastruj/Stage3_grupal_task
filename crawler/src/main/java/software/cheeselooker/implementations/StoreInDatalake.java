@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StoreInDatalake implements StoreInDatalakeInterface {
@@ -46,17 +47,12 @@ public class StoreInDatalake implements StoreInDatalakeInterface {
     }
 
     @Override
-    public void saveMetadata(int customId, int gutenbergId, String title, String author, String url) throws CrawlerException {
-        String metadataEntry = customId + "," + gutenbergId + "," + title + "," + author + "," + url + "\n";
-        try {
-            Files.createDirectories(metadataPath.getParent());
-        } catch (IOException e) {
-            throw new CrawlerException("Failed to create metadata directory: " + e.getMessage(), e);
-        }
-        try (FileWriter writer = new FileWriter(metadataPath.toFile(), true)) {
+    public void saveMetadata(int customId, int bookId, String title, String author, String downloadUrl) throws CrawlerException {
+        String metadataEntry = customId + "," + bookId + "," + sanitizeFileName(title) + "," + author + "," + downloadUrl + "\n";
+        try (BufferedWriter writer = Files.newBufferedWriter(metadataPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
             writer.write(metadataEntry);
         } catch (IOException e) {
-            throw new CrawlerException("Failed to write metadata: " + e.getMessage(), e);
+            throw new CrawlerException("Failed to save metadata.", e);
         }
     }
 

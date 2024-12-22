@@ -18,7 +18,7 @@ public class CrawlerCommand implements Command {
     private final String metadataPath;
     private final ReaderFromWebInterface reader;
     private final StoreInDatalakeInterface store;
-    private final IMap<Integer, String> bookMap;  // Aquí agregamos el campo bookMap
+    private final IMap<String, String> bookMap;  // Aquí agregamos el campo bookMap
 
     // Modificar el constructor para incluir el parámetro IMap
     public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader,
@@ -27,7 +27,8 @@ public class CrawlerCommand implements Command {
         this.metadataPath = metadataPath;
         this.reader = reader;
         this.store = store;
-        this.bookMap = bookMap;  // Inicializamos bookMap
+        this.bookMap = bookMap;
+        loadBooksFromMetadata(); // Cargar metadatos al iniciar
     }
 
     @Override
@@ -75,12 +76,17 @@ public class CrawlerCommand implements Command {
     }
 
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
+        if (bookMap.containsKey(String.valueOf(nextId))) {
+            System.out.println("Book ID " + nextId + " is already downloaded.");
+            return; // Evitar descarga duplicada
+        }
+
         int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
         store.saveMetadata(customId, nextId, titleAndAuthor[0], titleAndAuthor[1],
                 "https://www.gutenberg.org/files/" + nextId + "/" + nextId + "-0.txt");
 
-        // Aquí puedes realizar la lógica de agregar el libro al IMap si es necesario
-        bookMap.put(nextId, titleAndAuthor[0]);  // Este es solo un ejemplo, ajusta según tu lógica
+        bookMap.put(String.valueOf(nextId), titleAndAuthor[0]); // Compartir el libro descargado
+        System.out.println("Book ID " + nextId + " saved and shared in Hazelcast.");
     }
 
     public static int obtainLastId(String metadataPath) {
@@ -120,5 +126,22 @@ public class CrawlerCommand implements Command {
             lastLine = line;
         }
         return lastLine;
+    }
+    private void loadBooksFromMetadata() {
+        if (Files.exists(Paths.get(metadataPath))) {
+            try (BufferedReader reader = Files.newBufferedReader(Paths.get(metadataPath))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split(",");
+                    if (fields.length > 2) {
+                        String bookId = fields[1].trim();
+                        String title = fields[2].trim();
+                        bookMap.put(bookId, title); // Reconstruir el mapa compartido
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Failed to load metadata: " + e.getMessage());
+            }
+        }
     }
 }

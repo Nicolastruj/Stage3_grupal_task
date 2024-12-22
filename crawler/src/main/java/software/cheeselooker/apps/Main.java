@@ -34,13 +34,13 @@ public class Main {
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         IMap<String, String> confirmationMap = hazelcastInstance.getMap("confirmationMap"); // Mapa distribuido para la confirmación
-
+        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap");
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
         Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, confirmationMap);
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        periodicTask(scheduler, crawlerCommand, confirmationMap);
+        periodicTask(scheduler, crawlerCommand, bookMap);
     }
 
     private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, IMap<String, String> confirmationMap) {
