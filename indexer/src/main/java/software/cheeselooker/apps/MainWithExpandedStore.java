@@ -17,7 +17,8 @@ public class MainWithExpandedStore {
     public static void main(String[] args) {
         Path bookDatalakePath = Paths.get(System.getProperty("user.dir"), "/data/datalake");
         Path invertedIndexPath = Paths.get(System.getProperty("user.dir"), "/data/datamart");
-        Path stopWordsPath = Paths.get("indexer/src/main/resources/stopwords.txt");
+        //Path stopWordsPath = Paths.get("indexer/src/main/resources/stopwords.txt");
+        Path stopWordsPath = Paths.get("/app/resources/stopwords.txt");
         String indexedBooksFilePath = Paths.get(System.getProperty("user.dir"), "data/indexed_books.txt").toString();
 
         IndexerReader indexerReader = new GutenbergBookReader(bookDatalakePath.toString());
