@@ -44,13 +44,17 @@ public class CrawlerCommand implements Command {
             int nextId = lastId + 1;
             lastId += 1;
 
-            // Verificar si el libro ya ha sido descargado
-            if (bookMap.containsKey(String.valueOf(nextId))) {
-                System.out.println("Book ID " + nextId + " has already been downloaded. Skipping.");
-                continue; // Si el libro ya ha sido descargado, pasar al siguiente
-            }
+            // Intentamos obtener un lock para el libro
+            String bookKey = String.valueOf(nextId);
+            bookMap.lock(bookKey);  // Adquirimos el lock
 
             try {
+                // Verificamos si el libro ya ha sido descargado
+                if (bookMap.containsKey(bookKey)) {
+                    System.out.println("Book ID " + nextId + " has already been downloaded. Skipping.");
+                    continue; // Si ya está descargado, pasamos al siguiente
+                }
+
                 String[] titleAndAuthor = reader.getTitleAndAuthor(nextId);
 
                 if (titleAndAuthor != null) {
@@ -58,10 +62,11 @@ public class CrawlerCommand implements Command {
                         if (bookStream != null) {
                             saveBook(bookStream, titleAndAuthor, nextId);
                             successfulDownloads++;
+                            // Añadimos el libro al map para marcarlo como descargado
+                            bookMap.put(bookKey, titleAndAuthor[0]);
                             System.out.println("Successfully downloaded book ID " + nextId);
                         } else {
                             System.out.println("Book not found: " + nextId);
-                            // Si el libro no se encuentra, pasar al siguiente sin aumentar el contador de descargas
                         }
                     } catch (IOException e) {
                         System.err.println("Error downloading book ID " + nextId + ": " + e.getMessage());
@@ -71,6 +76,9 @@ public class CrawlerCommand implements Command {
                 }
             } catch (CrawlerException e) {
                 System.err.println("Error: " + e.getMessage());
+            } finally {
+                // Liberamos el lock para que otras instancias puedan acceder al libro
+                bookMap.unlock(bookKey);
             }
 
             try {
@@ -80,6 +88,7 @@ public class CrawlerCommand implements Command {
             }
         }
     }
+
 
 
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
