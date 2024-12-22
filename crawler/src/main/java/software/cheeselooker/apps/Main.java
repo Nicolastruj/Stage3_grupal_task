@@ -30,10 +30,10 @@ public class Main {
         JoinConfig joinConfig = networkConfig.getJoin();
 
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.1.19").addMember("192.168.1.76"); // Agrega las IPs de los portátiles
+        tcpIpConfig.setEnabled(true).addMember("192.168.1.19").addMember("192.168.1.76");
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
-        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap"); // Mapa distribuido para la confirmación
+        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap");
 
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());

@@ -1,32 +1,56 @@
 package software.cheeselooker.implementations;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.map.IMap;
 import software.cheeselooker.exceptions.CrawlerException;
 import software.cheeselooker.ports.StoreInDatalakeInterface;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.*;
+import java.nio.file.*;
 
 public class StoreInDatalake implements StoreInDatalakeInterface {
 
     private final Path metadataPath;
-    private final AtomicInteger customIdCounter;
+    private final IMap<String, Long> globalIdMap;  // We use IMap to store the counter of the ids
 
     public StoreInDatalake(String metadataFilePath) {
         this.metadataPath = Paths.get(metadataFilePath);
-        this.customIdCounter = new AtomicInteger(loadLastCustomId() + 1);
+
+        // Initialize Hazelcast and get the IMap
+        var hzInstance = Hazelcast.newHazelcastInstance();
+        this.globalIdMap = hzInstance.getMap("globalIdMap");
+
+        // Initialize the counter if it doesn't exists
+        if (!globalIdMap.containsKey("counter")) {
+            globalIdMap.put("counter", loadLastCustomId() + 1);  // Initialize the counter after the last used ID
+        }
     }
 
     @Override
     public int saveBook(InputStream bookStream, String title, String downloadDirectory) throws CrawlerException {
-        int customId = customIdCounter.getAndIncrement();
+        // Get the new customID
+        long customId = getNextCustomId();
         String bookFileName = sanitizeFileName(title) + "_" + customId + ".txt";
         Path filePath = Paths.get(downloadDirectory, bookFileName);
 
         saveBookInDatalake(bookStream, filePath);
 
+        return (int) customId;
+    }
+
+    private long getNextCustomId() {
+        long customId;
+        do {
+            customId = globalIdMap.get("counter");  // Reads the counter
+            long nextCustomId = customId + 1;  // Calculates the next ID
+            // Replace the counter value with the new ID
+        } while (!globalIdMap.replace("counter", customId, customId + 1));
         return customId;
     }
 
@@ -60,8 +84,8 @@ public class StoreInDatalake implements StoreInDatalakeInterface {
         }
     }
 
-    private int loadLastCustomId() {
-        int lastId = 0;
+    private long loadLastCustomId() {
+        long lastId = 0;
 
         if (Files.exists(metadataPath)) {
             try (BufferedReader reader = new BufferedReader(new FileReader(metadataPath.toFile()))) {
@@ -69,7 +93,7 @@ public class StoreInDatalake implements StoreInDatalakeInterface {
 
                 if (lastLine != null) {
                     String[] fields = lastLine.split(",");
-                    lastId = Integer.parseInt(fields[0].trim());
+                    lastId = Long.parseLong(fields[0].trim());
                 }
             } catch (IOException | NumberFormatException e) {
                 System.err.println("Failed to read last custom ID: " + e.getMessage());
