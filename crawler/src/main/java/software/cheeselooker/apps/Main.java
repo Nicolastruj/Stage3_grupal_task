@@ -9,6 +9,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import software.cheeselooker.control.CrawlerCommand;
 import software.cheeselooker.control.Command;
+import software.cheeselooker.implementations.DifferentialBookSync;
 import software.cheeselooker.implementations.ReaderFromWeb;
 import software.cheeselooker.implementations.StoreInDatalake;
 import software.cheeselooker.ports.ReaderFromWebInterface;
@@ -34,19 +35,20 @@ public class Main {
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap"); // Mapa distribuido para la confirmación
-
+        DifferentialBookSync differentialBookSync = new DifferentialBookSync(hazelcastInstance,datalakePath.toString());
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
         Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, bookMap);
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        periodicTask(scheduler, crawlerCommand);
+        periodicTask(scheduler, crawlerCommand, differentialBookSync);
     }
 
-    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand) {
+    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, DifferentialBookSync differentialBookSync) {
         scheduler.scheduleAtFixedRate(() -> {
 
             crawlerCommand.download(50);
+            differentialBookSync.startDifferentialSync();
 
         }, 0, 20, TimeUnit.MINUTES);
     }
