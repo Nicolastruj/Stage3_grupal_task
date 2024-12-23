@@ -89,8 +89,6 @@ public class CrawlerCommand implements Command {
         }
     }
 
-
-
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
         int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
         store.saveMetadata(customId, nextId, titleAndAuthor[0], titleAndAuthor[1],
