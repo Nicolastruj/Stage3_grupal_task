@@ -1,6 +1,7 @@
 package software.cheeselooker.control;
 
 import com.hazelcast.map.IMap;
+import com.hazelcast.topic.ITopic;
 import software.cheeselooker.exceptions.CrawlerException;
 import software.cheeselooker.ports.ReaderFromWebInterface;
 import software.cheeselooker.ports.StoreInDatalakeInterface;
@@ -18,16 +19,19 @@ public class CrawlerCommand implements Command {
     private final String metadataPath;
     private final ReaderFromWebInterface reader;
     private final StoreInDatalakeInterface store;
-    private final IMap<String, String> bookMap;  // Aquí agregamos el campo bookMap
+    private final IMap<String, String> bookMap;
+    private final ITopic<String> topic;
+    private final String machineId;
 
-    // Modificar el constructor para incluir el parámetro IMap
     public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader,
-                          StoreInDatalakeInterface store, IMap<String, String> bookMap) {
+                          StoreInDatalakeInterface store, IMap<String, String> bookMap, ITopic<String> topic, String machineId) {
         this.datalakePath = datalakePath;
         this.metadataPath = metadataPath;
         this.reader = reader;
         this.store = store;
         this.bookMap = bookMap;
+        this.topic = topic;
+        this.machineId = machineId;
     }
 
     @Override
@@ -36,7 +40,9 @@ public class CrawlerCommand implements Command {
         int successfulDownloads = 0;
         downloadLastBooks(successfulDownloads, lastId, numberOfBooks);
 
-        System.out.println("Three books downloaded successfully.");
+        System.out.println("Successfully downloaded " + numberOfBooks + " books.");
+        // Publicar mensaje de confirmación cuando se completan las descargas
+        topic.publish("download_complete:" + numberOfBooks + ":" + machineId);
     }
 
     private void downloadLastBooks(int successfulDownloads, int lastId, int numberOfBooks) {
@@ -44,15 +50,13 @@ public class CrawlerCommand implements Command {
             int nextId = lastId + 1;
             lastId += 1;
 
-            // Intentamos obtener un lock para el libro
             String bookKey = String.valueOf(nextId);
-            bookMap.lock(bookKey);  // Adquirimos el lock
+            bookMap.lock(bookKey);
 
             try {
-                // Verificamos si el libro ya ha sido descargado
                 if (bookMap.containsKey(bookKey)) {
                     System.out.println("Book ID " + nextId + " has already been downloaded. Skipping.");
-                    continue; // Si ya está descargado, pasamos al siguiente
+                    continue;
                 }
 
                 String[] titleAndAuthor = reader.getTitleAndAuthor(nextId);
@@ -62,7 +66,7 @@ public class CrawlerCommand implements Command {
                         if (bookStream != null) {
                             saveBook(bookStream, titleAndAuthor, nextId);
                             successfulDownloads++;
-                            // Añadimos el libro al map para marcarlo como descargado
+
                             bookMap.put(bookKey, titleAndAuthor[0]);
                             System.out.println("Successfully downloaded book ID " + nextId);
                         } else {
@@ -75,9 +79,8 @@ public class CrawlerCommand implements Command {
                     System.out.println("Failed to retrieve title and author for book ID " + nextId);
                 }
             } catch (CrawlerException e) {
-                System.err.println("Error: " + e.getMessage());
+                throw new RuntimeException(e);
             } finally {
-                // Liberamos el lock para que otras instancias puedan acceder al libro
                 bookMap.unlock(bookKey);
             }
 
@@ -93,8 +96,6 @@ public class CrawlerCommand implements Command {
         int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
         store.saveMetadata(customId, nextId, titleAndAuthor[0], titleAndAuthor[1],
                 "https://www.gutenberg.org/files/" + nextId + "/" + nextId + "-0.txt");
-
-        // Aquí puedes realizar la lógica de agregar el libro al IMap si es necesario
         bookMap.put(String.valueOf(nextId), titleAndAuthor[0]);  // Este es solo un ejemplo, ajusta según tu lógica
     }
 
