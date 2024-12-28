@@ -279,7 +279,7 @@ public class CommonQueryEngine implements QueryEngine {
 
             do {
                 occurrences++;
-                highlightMatch(matcher, highlightedBuffer);
+                //highlightMatch(matcher, highlightedBuffer);
             } while (matcher.find());
 
             matcher.appendTail(highlightedBuffer);

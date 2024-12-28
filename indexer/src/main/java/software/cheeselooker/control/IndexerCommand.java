@@ -129,9 +129,12 @@ public class IndexerCommand implements Command {
         List<Book> indexedBooks = new ArrayList<>();
 
         for (Book book : books) {
-            System.out.println("book in tray" + book.bookId());
+            int tiempo1 = (int) System.currentTimeMillis();
+            System.out.println("Indexando libro " + book.bookId());
             indexerStore.index(book);
             indexedBooks.add(book);
+            int tiempo2 = (int) (System.currentTimeMillis() - tiempo1);
+            System.out.println("libro" + book.bookId() + "indexado en un tiempo de " + tiempo2);
         }
 
         return indexedBooks;
