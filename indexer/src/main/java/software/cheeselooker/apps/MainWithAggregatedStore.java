@@ -34,6 +34,9 @@ public class MainWithAggregatedStore {
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic"); // El topic donde el crawler enviará los mensajes
 
+        // Map para almacenar los datos serializados por máquina
+        IMap<String, String> indexedDataMap = hazelcastInstance.getMap("IndexedDataMap");
+
         String machineId = System.getenv("MACHINE_ID");
 
         // Inicialización de las interfaces
@@ -49,6 +52,14 @@ public class MainWithAggregatedStore {
                 try {
                     // Ejecuta el proceso de indexación
                     hierarchicalCsvController.execute();
+
+                    // Serializa el contenido de la indexación
+                    String serializedData = hierarchicalCsvStore.serializeData();
+
+                    // Almacena el contenido en el Map
+                    indexedDataMap.put(machineId, serializedData);
+
+
                     System.out.println("Indexing process executed.");
                 } catch (IndexerException e) {
                     throw new RuntimeException("Error while indexing books.", e);

@@ -96,4 +96,30 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
         String csvEntry = bookId + "," + position + "\n";
         Files.write(filePath, csvEntry.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
     }
+
+
+    /**
+     * Serializes the data stored in the hierarchical directory structure.
+     *
+     * @return A string representation of the serialized data.
+     */
+    public String serializeData() {
+        StringBuilder serializedData = new StringBuilder();
+
+        try {
+            Files.walk(invertedIndexPath).filter(Files::isRegularFile).forEach(filePath -> {
+                try {
+                    serializedData.append("Word: ").append(filePath.getFileName().toString().replace(".csv", "")).append("\n");
+                    serializedData.append("Entries:\n");
+                    Files.lines(filePath).forEach(line -> serializedData.append("  ").append(line).append("\n"));
+                } catch (IOException e) {
+                    throw new RuntimeException("Error reading file: " + filePath, e);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException("Error traversing directory: " + invertedIndexPath, e);
+        }
+
+        return serializedData.toString();
+    }
 }
