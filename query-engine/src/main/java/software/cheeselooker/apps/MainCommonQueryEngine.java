@@ -1,4 +1,4 @@
-package software.cheeselooker.apps;
+/*package software.cheeselooker.apps;
 
 import software.cheeselooker.control.Command;
 import software.cheeselooker.control.SearchEngineCommand;
@@ -33,4 +33,4 @@ public class MainCommonQueryEngine {
             throw new QueryEngineException(e.getMessage(), e);
         }
     }
-}
+}*/
