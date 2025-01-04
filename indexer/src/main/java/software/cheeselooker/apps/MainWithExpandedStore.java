@@ -21,8 +21,8 @@ public class MainWithExpandedStore {
     public static void main(String[] args) {
         Path bookDatalakePath = Paths.get(System.getProperty("user.dir"), "/data/datalake");
         Path invertedIndexPath = Paths.get(System.getProperty("user.dir"), "/data/datamart");
-        //Path stopWordsPath = Paths.get("indexer/src/main/resources/stopwords.txt");
-        Path stopWordsPath = Paths.get("/app/resources/stopwords.txt");
+        Path stopWordsPath = Paths.get("indexer/src/main/resources/stopwords.txt");
+        //Path stopWordsPath = Paths.get("/app/resources/stopwords.txt");
         String indexedBooksFilePath = Paths.get(System.getProperty("user.dir"), "data/indexed_books.txt").toString();
 
         // Configuración de Hazelcast
@@ -30,7 +30,7 @@ public class MainWithExpandedStore {
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig joinConfig = networkConfig.getJoin();
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.1.19").addMember("192.168.1.76"); // Agrega las IPs de los portátiles
+        tcpIpConfig.setEnabled(true).addMember("192.168.311.115").addMember("192.168.31.254"); // Agrega las IPs de los portátiles
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic"); // El topic donde el crawler enviará los mensajes

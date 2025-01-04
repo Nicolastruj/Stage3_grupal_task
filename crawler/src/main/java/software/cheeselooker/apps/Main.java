@@ -10,7 +10,6 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.topic.ITopic;
 import software.cheeselooker.control.CrawlerCommand;
 import software.cheeselooker.control.Command;
-import software.cheeselooker.implementations.DifferentialBookSync;
 import software.cheeselooker.implementations.ReaderFromWeb;
 import software.cheeselooker.implementations.StoreInDatalake;
 import software.cheeselooker.ports.ReaderFromWebInterface;
@@ -32,26 +31,25 @@ public class Main {
         JoinConfig joinConfig = networkConfig.getJoin();
 
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.1.19").addMember("192.168.1.76"); // Agrega las IPs de los portátiles
+        tcpIpConfig.setEnabled(true).addMember("192.168.31.115").addMember("192.168.31.254"); // Agrega las IPs de los portátiles
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");
         String machineId = System.getenv("MACHINE_ID"); // Identidad de la máquina
         IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap"); // Mapa distribuido para la confirmación
-        DifferentialBookSync differentialBookSync = new DifferentialBookSync(hazelcastInstance,datalakePath.toString());
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
         Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, bookMap, topic, machineId);
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        periodicTask(scheduler, crawlerCommand, differentialBookSync);
+        periodicTask(scheduler, crawlerCommand, topic, machineId);
     }
 
-    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, DifferentialBookSync differentialBookSync) {
+    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, ITopic topic, String machineId) {
         scheduler.scheduleAtFixedRate(() -> {
 
             crawlerCommand.download(50);
-            differentialBookSync.startDifferentialSync();
+            topic.publish("download_complete:" + 50 + ":" + machineId);
 
         }, 0, 20, TimeUnit.MINUTES);
     }

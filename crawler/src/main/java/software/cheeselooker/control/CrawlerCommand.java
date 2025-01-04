@@ -54,19 +54,14 @@ public class CrawlerCommand implements Command {
             bookMap.lock(bookKey);
 
             try {
+                // Eliminamos la lógica de verificación en bookMap.containsKey(bookKey)
                 String[] titleAndAuthor = reader.getTitleAndAuthor(nextId);
 
                 if (titleAndAuthor != null) {
                     try (InputStream bookStream = reader.downloadBookStream(nextId)) {
                         if (bookStream != null) {
                             saveBook(bookStream, titleAndAuthor, nextId);
-
-                            // Incrementar el contador solo si el libro no estaba en el map previamente
-                            if (!bookMap.containsKey(bookKey)) {
-                                successfulDownloads++;
-                            }
-
-                            bookMap.put(bookKey, titleAndAuthor[0]);
+                            successfulDownloads++; // Incrementamos aquí sin importar si ya existe
                             System.out.println("Successfully downloaded book ID " + nextId);
                         } else {
                             System.out.println("Book not found: " + nextId);
@@ -90,6 +85,7 @@ public class CrawlerCommand implements Command {
             }
         }
     }
+
 
 
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
