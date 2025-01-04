@@ -54,18 +54,17 @@ public class CrawlerCommand implements Command {
             bookMap.lock(bookKey);
 
             try {
-                if (bookMap.containsKey(bookKey)) {
-                    System.out.println("Book ID " + nextId + " has already been downloaded. Skipping.");
-                    continue;
-                }
-
                 String[] titleAndAuthor = reader.getTitleAndAuthor(nextId);
 
                 if (titleAndAuthor != null) {
                     try (InputStream bookStream = reader.downloadBookStream(nextId)) {
                         if (bookStream != null) {
                             saveBook(bookStream, titleAndAuthor, nextId);
-                            successfulDownloads++;
+
+                            // Incrementar el contador solo si el libro no estaba en el map previamente
+                            if (!bookMap.containsKey(bookKey)) {
+                                successfulDownloads++;
+                            }
 
                             bookMap.put(bookKey, titleAndAuthor[0]);
                             System.out.println("Successfully downloaded book ID " + nextId);
@@ -91,6 +90,7 @@ public class CrawlerCommand implements Command {
             }
         }
     }
+
 
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
         int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
