@@ -6,9 +6,11 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.map.IMap;
 import com.hazelcast.topic.ITopic;
 import software.cheeselooker.control.IndexerCommand;
 import software.cheeselooker.exceptions.IndexerException;
+import software.cheeselooker.implementations.AggregatedHierarchicalCsvStore;
 import software.cheeselooker.implementations.ExpandedHierarchicalCsvStore;
 import software.cheeselooker.implementations.GutenbergBookReader;
 import software.cheeselooker.ports.IndexerReader;
@@ -21,7 +23,8 @@ public class MainWithAggregatedStore {
     public static void main(String[] args) {
         Path bookDatalakePath = Paths.get(System.getProperty("user.dir"), "/data/datalake");
         Path invertedIndexPath = Paths.get(System.getProperty("user.dir"), "/data/datamart");
-        Path stopWordsPath = Paths.get("indexer/src/main/resources/stopwords.txt");
+        //Path stopWordsPath = Paths.get("indexer/src/main/resources/stopwords.txt"); // to execute in IntelliJ
+        Path stopWordsPath = Paths.get(System.getProperty("user.dir"), "resources/stopwords.txt");
         String indexedBooksFilePath = Paths.get(System.getProperty("user.dir"), "data/indexed_books.txt").toString();
 
         // Configuración de Hazelcast
@@ -29,7 +32,7 @@ public class MainWithAggregatedStore {
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig joinConfig = networkConfig.getJoin();
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.1.19").addMember("192.168.1.76"); // Agrega las IPs de los portátiles
+        tcpIpConfig.setEnabled(true).addMember("192.168.1.33").addMember("192.168.1.44"); // Agrega las IPs de los portátiles
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic"); // El topic donde el crawler enviará los mensajes
@@ -41,7 +44,7 @@ public class MainWithAggregatedStore {
 
         // Inicialización de las interfaces
         IndexerReader indexerReader = new GutenbergBookReader(bookDatalakePath.toString());
-        IndexerStore hierarchicalCsvStore = new ExpandedHierarchicalCsvStore(invertedIndexPath, stopWordsPath);
+        IndexerStore hierarchicalCsvStore = new AggregatedHierarchicalCsvStore(invertedIndexPath, stopWordsPath);
         IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore, indexedBooksFilePath);
 
         // Escuchar el topic y ejecutar la indexación cuando el crawler termine de descargar

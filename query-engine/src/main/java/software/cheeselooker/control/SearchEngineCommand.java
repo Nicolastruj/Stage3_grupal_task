@@ -20,15 +20,15 @@ public class SearchEngineCommand implements Command {
         this.queryEngine = queryEngine;
     }
 
-    //@Override
-    //public void execute() throws QueryEngineException {
-        //System.out.println("\nWelcome to the Search Engine!");
-        //System.out.println("If you want to exit the search engine, type 'EXIT'");
+    @Override
+    public void execute() throws QueryEngineException {
+        System.out.println("\nWelcome to the Search Engine!");
+        System.out.println("If you want to exit the search engine, type 'EXIT'");
 
-      //  processSearch();
-    //}
+        processSearch();
+    }
 
-    private void processSearch() throws QueryEngineException {
+    public void processSearch() throws QueryEngineException {
         while (true) {
             String searchInput = input.getSearchText();
             String[] words = searchInput.split("\\s+");

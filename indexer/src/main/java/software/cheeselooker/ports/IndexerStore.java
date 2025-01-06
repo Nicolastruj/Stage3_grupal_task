@@ -5,4 +5,6 @@ import software.cheeselooker.model.Book;
 
 public interface IndexerStore {
     void index(Book book) throws IndexerException;
+
+    String serializeData();
 }

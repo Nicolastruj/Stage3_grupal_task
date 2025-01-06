@@ -15,7 +15,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Main-Class>software.cheeselooker.apps.MainCommonQueryEngine</Main-Class>
+              <Main-Class>software.cheeselooker.apps.SearchServer</Main-Class>
             </manifestEntries>
           </archive>
         </configuration>
@@ -32,12 +32,17 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>software.cheeselooker.apps.MainCommonQueryEngine</mainClass>
+                  <mainClass>software.cheeselooker.apps.SearchServer</mainClass>
                 </transformer>
               </transformers>
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>3.3.1</version>
       </plugin>
     </plugins>
   </build>
