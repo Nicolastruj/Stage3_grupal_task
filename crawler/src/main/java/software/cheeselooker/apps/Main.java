@@ -37,19 +37,19 @@ public class Main {
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");
         String machineId = System.getenv("MACHINE_ID"); // Identidad de la máquina
         IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap"); // Mapa distribuido para la confirmación
-
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
         Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, bookMap, topic, machineId);
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        periodicTask(scheduler, crawlerCommand);
+        periodicTask(scheduler, crawlerCommand, topic, machineId);
     }
 
-    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand) {
+    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, ITopic topic, String machineId) {
         scheduler.scheduleAtFixedRate(() -> {
 
             crawlerCommand.download(50);
+            topic.publish("download_complete:" + 50 + ":" + machineId);
 
         }, 0, 20, TimeUnit.MINUTES);
     }
