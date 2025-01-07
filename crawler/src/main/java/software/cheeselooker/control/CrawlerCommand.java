@@ -115,7 +115,7 @@ public class CrawlerCommand implements Command {
             if (lastLine != null) {
                 String[] fields = lastLine.split(",");
                 if (fields.length > 1) {
-                    lastGutenbergId = Integer.parseInt(fields[1].trim());
+                    lastGutenbergId = Integer.parseInt(fields[0].trim());
                 }
             }
         } catch (IOException | NumberFormatException e) {

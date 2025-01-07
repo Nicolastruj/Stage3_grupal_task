@@ -50,6 +50,7 @@ public class MainWithAggregatedStore {
         // Escuchar el topic y ejecutar la indexación cuando el crawler termine de descargar
         topic.addMessageListener(message -> {
             String receivedMessage = message.getMessageObject();
+            System.out.println(receivedMessage);
             if (receivedMessage.equalsIgnoreCase("download_complete:" + 50 + ":" + machineId)) {
                 // Aquí puedes agregar lógica adicional si necesitas validar el mensaje
                 try {

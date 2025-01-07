@@ -62,7 +62,6 @@ public class CrawlerTest {
         List<String> metadata = Files.readAllLines(metadataPath);
         assertEquals(stats.existingMetadataCount + 1, metadata.size(), "Metadata should contain one new entry.");
         assertNoDuplicates(metadata, 0);
-        assertNoDuplicates(metadata, 1);
     }
 
     @Test
@@ -97,7 +96,6 @@ public class CrawlerTest {
         List<String> metadata = Files.readAllLines(metadataPath);
         assertEquals(stats.existingMetadataCount + 3, metadata.size(), "Metadata should contain three new entries.");
         assertNoDuplicates(metadata, 0);
-        assertNoDuplicates(metadata, 1);
     }
 
     private EnvironmentStats prepareTestEnvironment(Path datalakePath, Path metadataPath) throws IOException {
