@@ -31,12 +31,12 @@ public class Main {
         JoinConfig joinConfig = networkConfig.getJoin();
 
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.1.33").addMember("192.168.1.44"); // Agrega las IPs de los portátiles
+        tcpIpConfig.setEnabled(true).addMember("192.168.1.44").addMember("192.168.1.33");
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");
-        String machineId = System.getenv("MACHINE_ID"); // Identidad de la máquina
-        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap"); // Mapa distribuido para la confirmación
+        String machineId = System.getenv("MACHINE_ID");
+        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap");
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
         Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, bookMap, topic, machineId);

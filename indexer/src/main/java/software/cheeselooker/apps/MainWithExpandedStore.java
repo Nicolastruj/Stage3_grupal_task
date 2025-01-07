@@ -25,30 +25,25 @@ public class MainWithExpandedStore {
         //Path stopWordsPath = Paths.get("/app/resources/stopwords.txt");
         String indexedBooksFilePath = Paths.get(System.getProperty("user.dir"), "data/indexed_books.txt").toString();
 
-        // Configuración de Hazelcast
         Config config = new Config();
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig joinConfig = networkConfig.getJoin();
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.311.115").addMember("192.168.31.254"); // Agrega las IPs de los portátiles
+        tcpIpConfig.setEnabled(true).addMember("10.193.132.43").addMember("10.193.34.144");
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
-        ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic"); // El topic donde el crawler enviará los mensajes
+        ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");
 
         String machineId = System.getenv("MACHINE_ID");
 
-        // Inicialización de las interfaces
         IndexerReader indexerReader = new GutenbergBookReader(bookDatalakePath.toString());
         IndexerStore hierarchicalCsvStore = new ExpandedHierarchicalCsvStore(invertedIndexPath, stopWordsPath);
         IndexerCommand hierarchicalCsvController = new IndexerCommand(indexerReader, hierarchicalCsvStore, indexedBooksFilePath);
 
-        // Escuchar el topic y ejecutar la indexación cuando el crawler termine de descargar
         topic.addMessageListener(message -> {
             String receivedMessage = message.getMessageObject();
             if (receivedMessage.equalsIgnoreCase("download_complete:" + 50 + ":" + machineId)) {
-                // Aquí puedes agregar lógica adicional si necesitas validar el mensaje
                 try {
-                    // Ejecuta el proceso de indexación
                     hierarchicalCsvController.execute();
                     System.out.println("Indexing process executed.");
                 } catch (IndexerException e) {
