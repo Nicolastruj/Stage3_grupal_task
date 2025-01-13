@@ -51,11 +51,9 @@ public class CrawlerCommand implements Command {
 
             String bookKey = String.valueOf(nextId);
             bookMap.lock(bookKey);
-            System.out.println("Trying book: " + bookKey);
 
             try {
                 try (InputStream bookStream = reader.downloadBookStream(nextId)) {
-                    System.out.println(bookStream);
 
                     if (bookStream != null) {
                         if (reader.getTitleAndAuthor(nextId) != null) {
@@ -88,8 +86,8 @@ public class CrawlerCommand implements Command {
 
 
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
-        int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
-        store.saveMetadata(customId, nextId, titleAndAuthor[0], titleAndAuthor[1],
+        store.saveBook(bookStream, titleAndAuthor[0], nextId, datalakePath);
+        store.saveMetadata(nextId, titleAndAuthor[0], titleAndAuthor[1],
                 "https://www.gutenberg.org/files/" + nextId + "/" + nextId + "-0.txt");
         bookMap.put(String.valueOf(nextId), titleAndAuthor[0]);
     }

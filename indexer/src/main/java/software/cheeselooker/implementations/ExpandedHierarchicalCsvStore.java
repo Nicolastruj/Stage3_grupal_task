@@ -45,11 +45,6 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
     }
 
     @Override
-    /**
-     * Serializes the data stored in the hierarchical directory structure.
-     *
-     * @return A string representation of the serialized data.
-     */
     public String serializeData() {
         StringBuilder serializedData = new StringBuilder();
 

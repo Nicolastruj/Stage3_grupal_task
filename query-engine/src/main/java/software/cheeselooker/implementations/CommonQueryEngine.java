@@ -44,7 +44,6 @@ public class CommonQueryEngine implements QueryEngine {
 
         Map<String, Book> metadataMap = loadMetadata(metadataPath);
         getResults(words, commonBooks, metadataMap, results);
-
         return results;
     }
 
@@ -171,7 +170,7 @@ public class CommonQueryEngine implements QueryEngine {
         while ((line = reader.readLine()) != null) {
             String[] parts = line.split(",");
             if (parts.length >= 4) {
-                metadata.put(parts[0], new Book(parts[0], parts[2], parts[3], parts[4]));
+                metadata.put(parts[0], new Book(parts[0], parts[1], parts[2], parts[3]));
             }
         }
         return metadata;

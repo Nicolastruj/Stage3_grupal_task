@@ -7,27 +7,22 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class StoreInDatalake implements StoreInDatalakeInterface {
 
     private final Path metadataPath;
-    private final AtomicInteger customIdCounter;
 
     public StoreInDatalake(String metadataFilePath) {
         this.metadataPath = Paths.get(metadataFilePath);
-        this.customIdCounter = new AtomicInteger(loadLastCustomId() + 1);
     }
 
     @Override
-    public int saveBook(InputStream bookStream, String title, String downloadDirectory) throws CrawlerException {
-        int customId = customIdCounter.getAndIncrement();
-        String bookFileName = sanitizeFileName(title) + "_" + customId + ".txt";
+    public void saveBook(InputStream bookStream, String title, int bookId, String downloadDirectory) throws CrawlerException {
+        String bookFileName = sanitizeFileName(title) + "_" + bookId + ".txt";
         Path filePath = Paths.get(downloadDirectory, bookFileName);
 
         saveBookInDatalake(bookStream, filePath);
 
-        return customId;
     }
 
     private static void saveBookInDatalake(InputStream bookStream, Path filePath) throws CrawlerException {
@@ -46,7 +41,7 @@ public class StoreInDatalake implements StoreInDatalakeInterface {
     }
 
     @Override
-    public void saveMetadata(int customId, int gutenbergId, String title, String author, String url) throws CrawlerException {
+    public void saveMetadata(int gutenbergId, String title, String author, String url) throws CrawlerException {
         String metadataEntry = gutenbergId + "," + title + "," + author + "," + url + "\n";
         try {
             Files.createDirectories(metadataPath.getParent());
