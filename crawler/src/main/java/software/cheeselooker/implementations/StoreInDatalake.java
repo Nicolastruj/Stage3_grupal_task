@@ -3,7 +3,10 @@ package software.cheeselooker.implementations;
 import software.cheeselooker.exceptions.CrawlerException;
 import software.cheeselooker.ports.StoreInDatalakeInterface;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,34 +58,8 @@ public class StoreInDatalake implements StoreInDatalakeInterface {
         }
     }
 
-    private int loadLastCustomId() {
-        int lastId = 0;
-
-        if (Files.exists(metadataPath)) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(metadataPath.toFile()))) {
-                String lastLine = getLastLine(reader);
-
-                if (lastLine != null) {
-                    String[] fields = lastLine.split(",");
-                    lastId = Integer.parseInt(fields[0].trim());
-                }
-            } catch (IOException | NumberFormatException e) {
-                System.err.println("Failed to read last custom ID: " + e.getMessage());
-            }
-        }
-        return lastId;
-    }
-
     private String sanitizeFileName(String fileName) {
         return fileName.replaceAll("[<>:\"/|?*]", "_");
     }
 
-    private static String getLastLine(BufferedReader reader) throws IOException {
-        String lastLine = null;
-        String line;
-        while ((line = reader.readLine()) != null) {
-            lastLine = line;
-        }
-        return lastLine;
-    }
 }

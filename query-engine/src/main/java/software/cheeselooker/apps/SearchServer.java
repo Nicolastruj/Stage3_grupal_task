@@ -1,12 +1,11 @@
 package software.cheeselooker.apps;
 
-import spark.Spark;
 import software.cheeselooker.implementations.CommonQueryEngine;
 import software.cheeselooker.implementations.SearchServerOutput;
+import spark.Spark;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 

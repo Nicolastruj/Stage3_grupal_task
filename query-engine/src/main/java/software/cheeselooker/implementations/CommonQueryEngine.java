@@ -6,12 +6,9 @@ import software.cheeselooker.model.QueryEngine;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.concurrent.*;
 
 public class CommonQueryEngine implements QueryEngine {
     private final String metadataPath;

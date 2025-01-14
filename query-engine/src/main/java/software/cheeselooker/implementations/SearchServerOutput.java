@@ -1,9 +1,12 @@
 package software.cheeselooker.implementations;
 
-import software.cheeselooker.ports.Output;
 import org.apache.commons.lang3.StringEscapeUtils;
+import software.cheeselooker.ports.Output;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SearchServerOutput implements Output {
