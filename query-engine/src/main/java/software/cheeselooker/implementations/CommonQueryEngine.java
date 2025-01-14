@@ -6,6 +6,7 @@ import software.cheeselooker.model.QueryEngine;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,7 +41,6 @@ public class CommonQueryEngine implements QueryEngine {
 
         Map<String, Book> metadataMap = loadMetadata(metadataPath);
         getResults(words, commonBooks, metadataMap, results);
-
         return results;
     }
 
@@ -49,26 +49,69 @@ public class CommonQueryEngine implements QueryEngine {
         return loadIndexedWordInfo(word);
     }
 
-    private Map<String, List<Integer>> loadIndexedWordInfo(String word) throws QueryEngineException {
-        String wordFilePath = constructWordFilePath(word, indexFolder);
-        File file = new File(wordFilePath);
 
-        if (!file.exists()) {
-            return null;
+    private Map<String, List<Integer>> loadIndexedWordInfo(String word) throws QueryEngineException {
+        File indexDir = new File(indexFolder);
+        if (!indexDir.exists() || !indexDir.isDirectory()) {
+            throw new QueryEngineException("Index folder not found: " + indexFolder);
         }
 
-        return getWordIndex(wordFilePath);
+        Pattern partitionPattern = Pattern.compile("^(\\d+)-(\\d+)$");
+        Map<String, List<Integer>> fullWordIndex = new ConcurrentHashMap<>();
+
+        File[] partitions = Objects.requireNonNull(indexDir.listFiles(File::isDirectory));
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        List<Future<?>> futures = new ArrayList<>();
+
+        partitionedTask(word, partitions, partitionPattern, futures, executor, fullWordIndex);
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new QueryEngineException("Error during parallel index loading", e);
+            }
+        }
+
+        executor.shutdown();
+
+        return fullWordIndex.isEmpty() ? null : fullWordIndex;
     }
 
-    private String constructWordFilePath(String word, String indexFolder) {
+    private void partitionedTask(String word, File[] partitions, Pattern partitionPattern, List<Future<?>> futures, ExecutorService executor, Map<String, List<Integer>> fullWordIndex) {
+        for (File partition : partitions) {
+            Matcher matcher = partitionPattern.matcher(partition.getName());
+            if (!matcher.matches()) {
+                continue;
+            }
+
+            futures.add(executor.submit(() -> {
+                try {
+                    String wordFilePath = constructWordFilePathWithinPartition(word, partition);
+                    File wordFile = new File(wordFilePath);
+
+                    if (wordFile.exists()) {
+                        fullWordIndex.putAll(getWordIndex(wordFilePath));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }));
+        }
+    }
+
+
+    private String constructWordFilePathWithinPartition(String word, File partitionFolder) {
         int depth = Math.min(word.length(), 3);
-        StringBuilder pathBuilder = new StringBuilder(indexFolder);
+        StringBuilder pathBuilder = new StringBuilder(partitionFolder.getAbsolutePath());
         for (int i = 0; i < depth; i++) {
             pathBuilder.append("/").append(word.charAt(i));
         }
         pathBuilder.append("/").append(word).append(".csv");
         return pathBuilder.toString();
     }
+
 
     private static Map<String, List<Integer>> getWordIndex(String wordFilePath) throws QueryEngineException {
         Map<String, List<Integer>> wordIndex = new HashMap<>();
@@ -124,7 +167,7 @@ public class CommonQueryEngine implements QueryEngine {
         while ((line = reader.readLine()) != null) {
             String[] parts = line.split(",");
             if (parts.length >= 4) {
-                metadata.put(parts[0], new Book(parts[0], parts[2], parts[3], parts[4]));
+                metadata.put(parts[0], new Book(parts[0], parts[1], parts[2], parts[3]));
             }
         }
         return metadata;
@@ -232,7 +275,7 @@ public class CommonQueryEngine implements QueryEngine {
 
             do {
                 occurrences++;
-                highlightMatch(matcher, highlightedBuffer);
+                //highlightMatch(matcher, highlightedBuffer);
             } while (matcher.find());
 
             matcher.appendTail(highlightedBuffer);

@@ -1,4 +1,4 @@
-package software.cheeselooker.apps;
+package software.cheeselooker;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
@@ -8,6 +8,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.hazelcast.topic.ITopic;
+import org.openjdk.jmh.annotations.*;
 import software.cheeselooker.control.Command;
 import software.cheeselooker.control.CrawlerCommand;
 import software.cheeselooker.implementations.ReaderFromWeb;
@@ -17,12 +18,16 @@ import software.cheeselooker.ports.StoreInDatalakeInterface;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class Main {
-    public static void main(String[] args) {
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Fork(1)
+@Warmup(iterations = 1, time = 1)
+@Measurement(iterations = 5, time = 1)
+public class CrawlerBenchmark {
+    @Benchmark
+    public void crawler() {
         Path datalakePath = Paths.get(System.getProperty("user.dir"), "/data/datalake").normalize();
         Path metadataPath = Paths.get(System.getProperty("user.dir"), "/data/metadata/metadata.csv").normalize();
 
@@ -31,26 +36,17 @@ public class Main {
         JoinConfig joinConfig = networkConfig.getJoin();
 
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("10.26.14.223").addMember("10.26.14.222");
+        tcpIpConfig.setEnabled(true).addMember("192.168.1.33").addMember("192.168.1.44"); // Agrega las IPs de los portátiles
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");
-        String machineId = System.getenv("MACHINE_ID");
-        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap");
+        String machineId = System.getenv("MACHINE_ID"); // Identidad de la máquina
+        IMap<String, String> bookMap = hazelcastInstance.getMap("bookMap"); // Mapa distribuido para la confirmación
+
         ReaderFromWebInterface reader = new ReaderFromWeb();
         StoreInDatalakeInterface store = new StoreInDatalake(metadataPath.toString());
         Command crawlerCommand = new CrawlerCommand(datalakePath.toString(), metadataPath.toString(), reader, store, bookMap, topic, machineId);
 
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        periodicTask(scheduler, crawlerCommand, topic, machineId);
-    }
-
-    private static void periodicTask(ScheduledExecutorService scheduler, Command crawlerCommand, ITopic topic, String machineId) {
-        scheduler.scheduleAtFixedRate(() -> {
-
-            crawlerCommand.download(50);
-            topic.publish("download_complete:" + 50 + ":" + machineId);
-
-        }, 0, 20, TimeUnit.MINUTES);
+        crawlerCommand.download(3);
     }
 }

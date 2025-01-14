@@ -24,6 +24,13 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
 
     @Override
     public void index(Book book) throws IndexerException {
+        Path backUp = invertedIndexPath;
+        int bookIdNumeric = Integer.parseInt(book.bookId());
+        int startRange = (bookIdNumeric / 10) * 10;
+        int endRange = startRange + 9;
+        String rangeDirectory = startRange + "-" + endRange;
+
+        invertedIndexPath = invertedIndexPath.resolve(rangeDirectory);
         String content = book.content();
         String bookId = book.bookId();
         String[] words = content.split("\\W+");
@@ -34,6 +41,28 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
                 indexWord(bookId, i, word);
             }
         }
+        invertedIndexPath = backUp;
+    }
+
+    @Override
+    public String serializeData() {
+        StringBuilder serializedData = new StringBuilder();
+
+        try {
+            Files.walk(invertedIndexPath).filter(Files::isRegularFile).forEach(filePath -> {
+                try {
+                    serializedData.append("Word: ").append(filePath.getFileName().toString().replace(".csv", "")).append("\n");
+                    serializedData.append("Entries:\n");
+                    Files.lines(filePath).forEach(line -> serializedData.append("  ").append(line).append("\n"));
+                } catch (IOException e) {
+                    throw new RuntimeException("Error reading file: " + filePath, e);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException("Error traversing directory: " + invertedIndexPath, e);
+        }
+
+        return serializedData.toString();
     }
 
     private static void loadStopWords(Path stopWordsFilePath) {
@@ -88,4 +117,6 @@ public class ExpandedHierarchicalCsvStore implements IndexerStore {
         String csvEntry = bookId + "," + position + "\n";
         Files.write(filePath, csvEntry.getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
     }
+
+
 }

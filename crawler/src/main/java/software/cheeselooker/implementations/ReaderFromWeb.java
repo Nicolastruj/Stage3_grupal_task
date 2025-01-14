@@ -28,13 +28,11 @@ public class ReaderFromWeb implements ReaderFromWebInterface {
     }
 
     private static InputStream getResultFromHttpURLConnection(int responseCode, HttpURLConnection connection)
-            throws IOException, CrawlerException {
+            throws IOException {
         if (responseCode == HttpURLConnection.HTTP_OK) {
             return connection.getInputStream();
-        } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
-            return null;
         } else {
-            throw new CrawlerException("HTTP error code: " + responseCode);
+            return null;
         }
     }
 
@@ -76,6 +74,3 @@ public class ReaderFromWeb implements ReaderFromWebInterface {
                 .replace(",", ";");
     }
 }
-
-
-

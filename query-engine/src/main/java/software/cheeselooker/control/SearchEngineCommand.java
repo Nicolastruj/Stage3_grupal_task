@@ -28,7 +28,7 @@ public class SearchEngineCommand implements Command {
         processSearch();
     }
 
-    private void processSearch() throws QueryEngineException {
+    public void processSearch() throws QueryEngineException {
         while (true) {
             String searchInput = input.getSearchText();
             String[] words = searchInput.split("\\s+");

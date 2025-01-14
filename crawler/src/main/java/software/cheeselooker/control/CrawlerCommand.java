@@ -1,5 +1,7 @@
 package software.cheeselooker.control;
 
+import com.hazelcast.map.IMap;
+import com.hazelcast.topic.ITopic;
 import software.cheeselooker.exceptions.CrawlerException;
 import software.cheeselooker.ports.ReaderFromWebInterface;
 import software.cheeselooker.ports.StoreInDatalakeInterface;
@@ -17,48 +19,61 @@ public class CrawlerCommand implements Command {
     private final String metadataPath;
     private final ReaderFromWebInterface reader;
     private final StoreInDatalakeInterface store;
+    private final IMap<String, String> bookMap;
+    private final ITopic<String> topic;
+    private final String machineId;
 
-    public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader, StoreInDatalakeInterface store) {
+    public CrawlerCommand(String datalakePath, String metadataPath, ReaderFromWebInterface reader,
+                          StoreInDatalakeInterface store, IMap<String, String> bookMap, ITopic<String> topic, String machineId) {
         this.datalakePath = datalakePath;
         this.metadataPath = metadataPath;
         this.reader = reader;
         this.store = store;
+        this.bookMap = bookMap;
+        this.topic = topic;
+        this.machineId = machineId;
     }
 
     @Override
-    public void download() {
+    public void download(int numberOfBooks) {
         int lastId = obtainLastId(metadataPath);
         int successfulDownloads = 0;
-        downloadLastBooks(successfulDownloads, lastId);
+        downloadLastBooks(successfulDownloads, lastId, numberOfBooks);
 
-        System.out.println("Five books downloaded successfully.");
+        System.out.println("Successfully downloaded " + numberOfBooks + " books.");
+        topic.publish("download_complete:" + numberOfBooks + ":" + machineId);
     }
 
-    private void downloadLastBooks(int successfulDownloads, int lastId) {
-        while (successfulDownloads < 5) {
+    private void downloadLastBooks(int successfulDownloads, int lastId, int numberOfBooks) {
+        while (successfulDownloads < numberOfBooks) {
             int nextId = lastId + 1;
             lastId += 1;
 
-            try {
-                String[] titleAndAuthor = reader.getTitleAndAuthor(nextId);
+            String bookKey = String.valueOf(nextId);
+            bookMap.lock(bookKey);
 
-                if (titleAndAuthor != null) {
-                    try (InputStream bookStream = reader.downloadBookStream(nextId)) {
-                        if (bookStream != null) {
-                            saveBook(bookStream, titleAndAuthor, nextId);
+            try {
+                try (InputStream bookStream = reader.downloadBookStream(nextId)) {
+
+                    if (bookStream != null) {
+                        if (reader.getTitleAndAuthor(nextId) != null) {
+                            saveBook(bookStream, reader.getTitleAndAuthor(nextId), nextId);
                             successfulDownloads++;
                             System.out.println("Successfully downloaded book ID " + nextId);
                         } else {
-                            System.out.println("Book not found: " + nextId);
+                            System.out.println("Failed to retrieve title and author for book ID " + nextId);
                         }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                    } else {
+                        System.out.println("Book not found: " + nextId);
                     }
-                } else {
-                    System.out.println("Failed to retrieve title and author for book ID " + nextId);
+                } catch (IOException e) {
+                    System.err.println("Error downloading book ID " + nextId + ": " + e.getMessage());
                 }
+
             } catch (CrawlerException e) {
-                System.err.println("Error: " + e.getMessage());
+                throw new RuntimeException(e);
+            } finally {
+                bookMap.unlock(bookKey);
             }
 
             try {
@@ -69,10 +84,12 @@ public class CrawlerCommand implements Command {
         }
     }
 
+
     private void saveBook(InputStream bookStream, String[] titleAndAuthor, int nextId) throws CrawlerException {
-        int customId = store.saveBook(bookStream, titleAndAuthor[0], datalakePath);
-        store.saveMetadata(customId, nextId, titleAndAuthor[0], titleAndAuthor[1],
+        store.saveBook(bookStream, titleAndAuthor[0], nextId, datalakePath);
+        store.saveMetadata(nextId, titleAndAuthor[0], titleAndAuthor[1],
                 "https://www.gutenberg.org/files/" + nextId + "/" + nextId + "-0.txt");
+        bookMap.put(String.valueOf(nextId), titleAndAuthor[0]);
     }
 
     public static int obtainLastId(String metadataPath) {
@@ -95,7 +112,7 @@ public class CrawlerCommand implements Command {
             if (lastLine != null) {
                 String[] fields = lastLine.split(",");
                 if (fields.length > 1) {
-                    lastGutenbergId = Integer.parseInt(fields[1].trim());
+                    lastGutenbergId = Integer.parseInt(fields[0].trim());
                 }
             }
         } catch (IOException | NumberFormatException e) {
@@ -113,9 +130,4 @@ public class CrawlerCommand implements Command {
         }
         return lastLine;
     }
-
-
 }
-
-
-
