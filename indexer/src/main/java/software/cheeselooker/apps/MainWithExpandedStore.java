@@ -29,7 +29,7 @@ public class MainWithExpandedStore {
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig joinConfig = networkConfig.getJoin();
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("10.193.132.43").addMember("10.193.34.144");
+        tcpIpConfig.setEnabled(true).addMember("10.26.14.223").addMember("10.26.14.222");
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");

@@ -30,7 +30,7 @@ public class MainWithAggregatedStore {
         NetworkConfig networkConfig = config.getNetworkConfig();
         JoinConfig joinConfig = networkConfig.getJoin();
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("192.168.1.33").addMember("192.168.1.44");
+        tcpIpConfig.setEnabled(true).addMember("10.26.14.223").addMember("10.26.14.222");
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");
