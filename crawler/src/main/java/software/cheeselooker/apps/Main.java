@@ -31,7 +31,14 @@ public class Main {
         JoinConfig joinConfig = networkConfig.getJoin();
 
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
-        tcpIpConfig.setEnabled(true).addMember("10.26.14.223").addMember("10.26.14.222");
+        tcpIpConfig.setEnabled(true)
+                .addMember("10.26.14.217")
+                .addMember("10.26.14.218")
+                .addMember("10.26.14.219")
+                .addMember("10.26.14.220")
+                .addMember("10.26.14.221")
+                .addMember("10.26.14.222")
+                .addMember("10.26.14.223");
 
         HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         ITopic<String> topic = hazelcastInstance.getTopic("indexerTopic");
